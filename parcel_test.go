@@ -35,26 +35,27 @@ func TestAddGetDelete(t *testing.T) {
 	if err != nil {
 		require.NoError(t, err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 	// add
 	parcel.Number, err = store.Add(parcel)
-
 	require.NoError(t, err)
 	require.NotEmpty(t, parcel.Number)
 
 	// get
 	stored, err := store.Get(parcel.Number)
-
 	require.NoError(t, err)
 	require.Equal(t, parcel, stored)
 
 	// delete
 	err = store.Delete(parcel.Number)
+	require.NoError(t, err)
 
-	stored, err = store.Get(parcel.Number)
+	_, err = store.Get(parcel.Number)
 	require.Equal(t, sql.ErrNoRows, err)
 }
 
@@ -65,25 +66,24 @@ func TestSetAddress(t *testing.T) {
 	if err != nil {
 		require.NoError(t, err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 	// add
 	parcel.Number, err = store.Add(parcel)
-
 	require.NoError(t, err)
 	require.NotEmpty(t, parcel.Number)
 
 	// set address
 	newAddress := "new test address"
 	err = store.SetAddress(parcel.Number, newAddress)
-
 	require.NoError(t, err)
 
 	// check
 	stored, err := store.Get(parcel.Number)
-
 	require.NoError(t, err)
 	require.Equal(t, newAddress, stored.Address)
 }
@@ -95,24 +95,23 @@ func TestSetStatus(t *testing.T) {
 	if err != nil {
 		require.NoError(t, err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 	// add
 	parcel.Number, err = store.Add(parcel)
-
 	require.NoError(t, err)
 	require.NotEmpty(t, parcel.Number)
 
 	// set status
 	err = store.SetStatus(parcel.Number, ParcelStatusSent)
-
 	require.NoError(t, err)
 
 	// check
 	stored, err := store.Get(parcel.Number)
-
 	require.NoError(t, err)
 	require.Equal(t, ParcelStatusSent, stored.Status)
 }
@@ -124,7 +123,9 @@ func TestGetByClient(t *testing.T) {
 	if err != nil {
 		require.NoError(t, err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 	store := NewParcelStore(db)
 
 	parcels := []Parcel{
@@ -143,7 +144,6 @@ func TestGetByClient(t *testing.T) {
 	// add
 	for i := 0; i < len(parcels); i++ {
 		id, err := store.Add(parcels[i])
-
 		require.NoError(t, err)
 		require.NotEmpty(t, id)
 
@@ -153,14 +153,12 @@ func TestGetByClient(t *testing.T) {
 
 	// get by client
 	storedParcels, err := store.GetByClient(client)
-
 	require.NoError(t, err)
 	require.Len(t, storedParcels, len(parcels))
 
 	// check
 	for _, parcel := range storedParcels {
 		expectedParcel, ok := parcelMap[parcel.Number]
-
 		require.True(t, ok)
 		require.Equal(t, expectedParcel, parcel)
 	}
